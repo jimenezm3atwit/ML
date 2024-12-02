@@ -1,55 +1,76 @@
-import numpy as np
 from pca import PCA
 from kmeans import KMeans, SemiSupervisedKMeans
+from sklearn.datasets import load_iris
+import matplotlib.pyplot as plt
+import numpy as np
 
-def main():
-    # Generate synthetic data for testing PCA
-    from sklearn.datasets import load_iris
-    iris = load_iris()
-    X_iris = iris.data
+# Load the Iris dataset
+iris = load_iris()
+X_iris = iris.data
+y_iris = iris.target  # True labels
 
-    # PCA Example
-    print("Testing PCA Implementation")
-    pca = PCA(n_components=2)
-    pca.train(X_iris)
-    X_reconstructed = pca.predict(X_iris)
+# PCA Implementation
+print("Testing PCA Implementation")
+pca = PCA(n_components=2)
+pca.train(X_iris)
+X_reduced = pca.transform(X_iris)
+X_reconstructed = pca.predict(X_iris)
+reconstruction_error = np.mean((X_iris - X_reconstructed) ** 2)
 
-    # Print original and reconstructed data shapes
-    print("Original data shape:", X_iris.shape)
-    print("Reconstructed data shape:", X_reconstructed.shape)
+print("Original data shape:", X_iris.shape)
+print("Reconstructed data shape:", X_reconstructed.shape)
+print("Reconstruction Error:", reconstruction_error)
 
-    # Calculate reconstruction error
-    reconstruction_error = np.mean((X_iris - X_reconstructed) ** 2)
-    print("Reconstruction Error:", reconstruction_error)
+# KMeans Implementation
+print("\nTesting KMeans Implementation")
+kmeans_hyperparameters = {'K': 3, 'tau': 1e-4, 's': 100}
+kmeans = KMeans(kmeans_hyperparameters)
+kmeans.train(X_reduced, y_iris)
+kmeans_clusters = kmeans.predict(X_reduced)
 
-    # Generate synthetic data for testing KMeans
-    from sklearn.datasets import make_blobs
-    X_blobs, y_blobs = make_blobs(n_samples=300, centers=4, n_features=2, random_state=42)
+print("Cluster assignments:", np.unique(kmeans_clusters))
 
-    # KMeans Example
-    print("\nTesting KMeans Implementation")
-    hyperparameters = {'K': 4, 'tau': 1e-4, 's': 100}
-    kmeans = KMeans(hyperparameters)
-    kmeans.train(X_blobs, y_blobs)
-    predictions = kmeans.predict(X_blobs)
+# Semi-Supervised KMeans Implementation
+print("\nTesting Semi-Supervised KMeans Implementation")
+semi_kmeans_hyperparameters = {'K': 3, 'tau': 1e-4, 's': 100}
+y_semi = np.full_like(y_iris, -1)  # Mark all as unlabeled
+y_semi[:30] = y_iris[:30]  # Assume 30 samples are labeled
+semi_kmeans = SemiSupervisedKMeans(semi_kmeans_hyperparameters)
+semi_kmeans.train(X_reduced, y_semi)
+semi_kmeans_clusters = semi_kmeans.predict(X_reduced)
 
-    # Print cluster assignments
-    print("Cluster assignments:", np.unique(predictions))
+print("Semi-Supervised Cluster assignments:", np.unique(semi_kmeans_clusters))
 
-    # Semi-Supervised KMeans Example
-    print("\nTesting Semi-Supervised KMeans Implementation")
-    # Assume we have labels for 10% of the data
-    n_labeled = int(0.1 * len(y_blobs))
-    y_semi = np.full_like(y_blobs, -1)
-    indices = np.random.choice(len(y_blobs), n_labeled, replace=False)
-    y_semi[indices] = y_blobs[indices]
+# Visualizations
+plt.figure(figsize=(12, 6))
 
-    semi_kmeans = SemiSupervisedKMeans(hyperparameters)
-    semi_kmeans.train(X_blobs, y_semi)
-    semi_predictions = semi_kmeans.predict(X_blobs)
+# Plot KMeans results
+plt.subplot(1, 2, 1)
+for cluster in np.unique(kmeans_clusters):
+    plt.scatter(
+        X_reduced[kmeans_clusters == cluster, 0],
+        X_reduced[kmeans_clusters == cluster, 1],
+        label=f"Cluster {cluster}"
+    )
+plt.title("K-Means Clustering (PCA Reduced Data)")
+plt.xlabel("Principal Component 1")
+plt.ylabel("Principal Component 2")
+plt.legend()
+plt.grid()
 
-    # Print cluster assignments
-    print("Semi-Supervised Cluster assignments:", np.unique(semi_predictions))
+# Plot Semi-Supervised KMeans results
+plt.subplot(1, 2, 2)
+for cluster in np.unique(semi_kmeans_clusters):
+    plt.scatter(
+        X_reduced[semi_kmeans_clusters == cluster, 0],
+        X_reduced[semi_kmeans_clusters == cluster, 1],
+        label=f"Cluster {cluster}"
+    )
+plt.title("Semi-Supervised K-Means Clustering (PCA Reduced Data)")
+plt.xlabel("Principal Component 1")
+plt.ylabel("Principal Component 2")
+plt.legend()
+plt.grid()
 
-if __name__ == "__main__":
-    main()
+plt.tight_layout()
+plt.show()

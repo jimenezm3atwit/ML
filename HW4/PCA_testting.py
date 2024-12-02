@@ -1,4 +1,4 @@
-from pca import PCA
+from HW4.pca import PCA
 import numpy as np
 from sklearn.datasets import load_iris
 import matplotlib.pyplot as plt

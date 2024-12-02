@@ -1,6 +1,6 @@
 import numpy as np
-from pca import PCA
-from kmeans import KMeans, SemiSupervisedKMeans
+from HW4.pca import PCA
+from HW4.kmeans import KMeans, SemiSupervisedKMeans
 
 def main():
     # Generate synthetic data for testing PCA
